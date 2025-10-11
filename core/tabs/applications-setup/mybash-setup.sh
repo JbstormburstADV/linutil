@@ -9,10 +9,13 @@ installDepend() {
         printf "%b\n" "${YELLOW}Installing Bash...${RC}"
         case "$PACKAGER" in
             pacman)
-                "$ESCALATION_TOOL" "$PACKAGER" -S --needed --noconfirm bash bash-completion tar bat tree unzip fontconfig git
+                "$ESCALATION_TOOL" "$PACKAGER" -S --needed --noconfirm bash bash-completion tar bat tree unzip fontconfig git fzf 
                 ;;
             apk)
                 "$ESCALATION_TOOL" "$PACKAGER" add bash bash-completion tar bat tree unzip fontconfig git
+                ;;
+            xbps-install)
+                "$ESCALATION_TOOL" "$PACKAGER" -Sy bash bash-completion tar bat tree unzip fontconfig git
                 ;;
             *)
                 "$ESCALATION_TOOL" "$PACKAGER" install -y bash bash-completion tar bat tree unzip fontconfig git
@@ -57,10 +60,18 @@ installStarshipAndFzf() {
         return
     fi
 
-    if ! curl -sSL https://starship.rs/install.sh | "$ESCALATION_TOOL" sh; then
-        printf "%b\n" "${RED}Something went wrong during starship install!${RC}"
-        exit 1
+    if [ "$PACKAGER" = "eopkg" ]; then
+        "$ESCALATION_TOOL" "$PACKAGER" install -y starship || {
+            printf "%b\n" "${RED}Failed to install starship with Solus!${RC}"
+            exit 1
+        }
+    else
+        curl -sSL https://starship.rs/install.sh | "$ESCALATION_TOOL" sh || {
+            printf "%b\n" "${RED}Failed to install starship!${RC}"
+            exit 1
+        }
     fi
+
     if command_exists fzf; then
         printf "%b\n" "${GREEN}Fzf already installed${RC}"
     else
@@ -96,6 +107,8 @@ linkConfig() {
         printf "%b\n" "${RED}Failed to create symbolic link for .bashrc${RC}"
         exit 1
     }
+
+    mkdir -p "$HOME/.config"
     ln -svf "$gitpath/starship.toml" "$HOME/.config/starship.toml" || {
         printf "%b\n" "${RED}Failed to create symbolic link for starship.toml${RC}"
         exit 1

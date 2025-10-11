@@ -7,17 +7,9 @@ installLibreWolf() {
         printf "%b\n" "${YELLOW}Installing Librewolf...${RC}"
         case "$PACKAGER" in
             apt-get|nala)
-                "$ESCALATION_TOOL" "$PACKAGER" install -y gnupg lsb-release apt-transport-https ca-certificates
-                distro=$(if echo " una bookworm vanessa focal jammy bullseye vera uma " | grep -q "$(lsb_release -sc)"; then "$(lsb_release -sc)"; else echo 'focal'; fi)
-                curl -fsSL https://deb.librewolf.net/keyring.gpg | "$ESCALATION_TOOL" gpg --dearmor -o /usr/share/keyrings/librewolf.gpg
-                echo "Types: deb
-URIs: https://deb.librewolf.net
-Suites: $distro
-Components: main
-Architectures: amd64
-Signed-By: /usr/share/keyrings/librewolf.gpg" | "$ESCALATION_TOOL" tee /etc/apt/sources.list.d/librewolf.sources > /dev/null
-                "$ESCALATION_TOOL" "$PACKAGER" update
-                "$ESCALATION_TOOL" "$PACKAGER" install -y librewolf
+                "$ESCALATION_TOOL" "$PACKAGER" update && "$ESCALATION_TOOL" "$PACKAGER" install -y extrepo
+                "$ESCALATION_TOOL" extrepo enable librewolf
+                "$ESCALATION_TOOL" "$PACKAGER" update && "$ESCALATION_TOOL" "$PACKAGER" install -y librewolf
                 ;;
             dnf)
                 curl -fsSL https://rpm.librewolf.net/librewolf-repo.repo | pkexec tee /etc/yum.repos.d/librewolf.repo > /dev/null
@@ -31,6 +23,10 @@ Signed-By: /usr/share/keyrings/librewolf.gpg" | "$ESCALATION_TOOL" tee /etc/apt/
                 ;;
             pacman)
                 "$AUR_HELPER" -S --needed --noconfirm librewolf-bin
+                ;;
+            xbps-install)
+                printf '%s\n' 'repository=https://github.com/index-0/librewolf-void/releases/latest/download/' | "$ESCALATION_TOOL" tee /etc/xbps.d/20-librewolf.conf > /dev/null
+                "$ESCALATION_TOOL" "$PACKAGER" -Syu librewolf
                 ;;
             apk)
                 checkFlatpak

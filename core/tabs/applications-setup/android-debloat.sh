@@ -18,6 +18,9 @@ install_adb() {
             apk)
                 "$ESCALATION_TOOL" "$PACKAGER" add android-tools
                 ;;
+            xbps-install)
+                "$ESCALATION_TOOL" "$PACKAGER" -Sy android-tools
+                ;;
             *)
                 printf "%b\n" "${RED}Unsupported package manager: $PACKAGER${RC}"
                 exit 1
@@ -31,7 +34,7 @@ install_adb() {
 install_universal_android_debloater() {
     if ! command_exists uad; then
         printf "%b\n" "${YELLOW}Installing Universal Android Debloater...${RC}."
-        curl -sSLo "${HOME}/uad" "https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/releases/download/v1.1.0/uad-ng-linux"
+        curl -sSLo "${HOME}/uad" "https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/releases/download/v1.1.2/uad-ng-linux"
         "$ESCALATION_TOOL" chmod +x "${HOME}/uad"
         "$ESCALATION_TOOL" mv "${HOME}/uad" /usr/local/bin/uad
     else

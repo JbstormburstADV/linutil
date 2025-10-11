@@ -9,9 +9,10 @@ installDiscord() {
             apt-get|nala)
                 curl -Lo discord.deb "https://discord.com/api/download?platform=linux&format=deb"
                 "$ESCALATION_TOOL" "$PACKAGER" install -y discord.deb
+                "$ESCALATION_TOOL" rm discord.deb
                 ;;
-            zypper)
-                "$ESCALATION_TOOL" "$PACKAGER" --non-interactive install discord
+            zypper|eopkg)
+                "$ESCALATION_TOOL" "$PACKAGER" install -y discord
                 ;;
             pacman)
                 "$ESCALATION_TOOL" "$PACKAGER" -S --needed --noconfirm discord 
@@ -20,7 +21,7 @@ installDiscord() {
                 "$ESCALATION_TOOL" "$PACKAGER" install -y "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm"
                 "$ESCALATION_TOOL" "$PACKAGER" install -y discord
                 ;;
-            apk)
+            apk | xbps-install)
                 checkFlatpak
                 flatpak install -y flathub com.discordapp.Discord
                 ;;

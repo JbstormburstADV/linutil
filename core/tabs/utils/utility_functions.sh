@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-. ../../common-script.sh
+. ../common-script.sh
 
 # Function to check xrandr is installed
 setup_xrandr() {
@@ -15,6 +15,12 @@ setup_xrandr() {
                 ;;
             apk)
                 "$ESCALATION_TOOL" "$PACKAGER" add xrandr
+                ;;
+            xbps-install)
+                "$ESCALATION_TOOL" "$PACKAGER" -Sy xrandr
+                ;;
+            dnf|eopkg)
+                "$ESCALATION_TOOL" "$PACKAGER" install -y xrandr
                 ;;
             *)
                 "$ESCALATION_TOOL" "$PACKAGER" install -y xorg-x11-server-utils

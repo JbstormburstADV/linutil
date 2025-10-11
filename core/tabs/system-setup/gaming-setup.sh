@@ -9,15 +9,25 @@ installDepend() {
     printf "%b\n" "${YELLOW}Installing dependencies...${RC}"
     case "$PACKAGER" in
         pacman)
-            #Check for multilib
-            if ! grep -q "^\s*\[multilib\]" /etc/pacman.conf; then
-                echo "[multilib]" | "$ESCALATION_TOOL" tee -a /etc/pacman.conf
-                echo "Include = /etc/pacman.d/mirrorlist" | "$ESCALATION_TOOL" tee -a /etc/pacman.conf
-                "$ESCALATION_TOOL" "$PACKAGER" -Syu
+            if grep -qi "Artix" /etc/os-release; then # Detect Artix Linux
+                # Check for lib32
+                if ! grep -q "^\s*\[lib32\]" /etc/pacman.conf; then
+                    echo "[lib32]" | "$ESCALATION_TOOL" tee -a /etc/pacman.conf
+                    echo "Include = /etc/pacman.d/mirrorlist" | "$ESCALATION_TOOL" tee -a /etc/pacman.conf
+                    "$ESCALATION_TOOL" "$PACKAGER" -Syu
+                else
+                    printf "%b\n" "${GREEN}lib32 is already enabled.${RC}"
+                fi
             else
-                printf "%b\n" "${GREEN}Multilib is already enabled.${RC}"
+                # Check for multilib
+                if ! grep -q "^\s*\[multilib\]" /etc/pacman.conf; then
+                    echo "[multilib]" | "$ESCALATION_TOOL" tee -a /etc/pacman.conf
+                    echo "Include = /etc/pacman.d/mirrorlist" | "$ESCALATION_TOOL" tee -a /etc/pacman.conf
+                    "$ESCALATION_TOOL" "$PACKAGER" -Syu
+                else
+                    printf "%b\n" "${GREEN}Multilib is already enabled.${RC}"
+                fi
             fi
-
             DISTRO_DEPS="gnutls lib32-gnutls base-devel gtk2 gtk3 lib32-gtk2 lib32-gtk3 libpulse lib32-libpulse alsa-lib lib32-alsa-lib \
                 alsa-utils alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib giflib lib32-giflib libpng lib32-libpng \
                 libldap lib32-libldap openal lib32-openal libxcomposite lib32-libxcomposite libxinerama lib32-libxinerama \
@@ -27,31 +37,27 @@ installDepend() {
             $AUR_HELPER -S --needed --noconfirm $DEPENDENCIES $DISTRO_DEPS
             ;;
         apt-get | nala)
-            DISTRO_DEPS="libasound2-plugins:i386 libsdl2-2.0-0:i386 libdbus-1-3:i386 libsqlite3-0:i386 wine64 wine32"
+            DISTRO_DEPS="libasound2-plugins:i386 libsdl2-2.0-0:i386 libdbus-1-3:i386 libsqlite3-0:i386 wine64 wine32 software-properties-common"
 
             "$ESCALATION_TOOL" dpkg --add-architecture i386
-
-            if [ "$DTYPE" != "pop" ]; then
-                "$ESCALATION_TOOL" "$PACKAGER" install -y software-properties-common
-                "$ESCALATION_TOOL" apt-add-repository contrib -y
-            fi
 
             "$ESCALATION_TOOL" "$PACKAGER" update
             "$ESCALATION_TOOL" "$PACKAGER" install -y $DEPENDENCIES $DISTRO_DEPS
             ;;
         dnf)
-            if [ "$(rpm -E %fedora)" -le 41 ]; then
-                "$ESCALATION_TOOL" "$PACKAGER" install ffmpeg ffmpeg-libs -y
-                "$ESCALATION_TOOL" "$PACKAGER" install -y $DEPENDENCIES
-            else
-                printf "%b\n" "${CYAN}Fedora < 41 detected. Installing rpmfusion repos.${RC}"
-                "$ESCALATION_TOOL" "$PACKAGER" install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-"$(rpm -E %fedora)".noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-"$(rpm -E %fedora)".noarch.rpm -y
-                "$ESCALATION_TOOL" "$PACKAGER" config-manager --enable fedora-cisco-openh264 -y
-                "$ESCALATION_TOOL" "$PACKAGER" install -y $DEPENDENCIES
-            fi
+            printf "%b\n" "${CYAN}Installing rpmfusion repos.${RC}"
+            "$ESCALATION_TOOL" "$PACKAGER" install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-"$(rpm -E %fedora)".noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-"$(rpm -E %fedora)".noarch.rpm -y
+            "$ESCALATION_TOOL" "$PACKAGER" config-manager setopt --repo fedora-cisco-openh264 enabled=1
+    
+            "$ESCALATION_TOOL" "$PACKAGER" install -y $DEPENDENCIES
             ;;
         zypper)
             "$ESCALATION_TOOL" "$PACKAGER" -n install $DEPENDENCIES
+            ;;
+        eopkg)
+            DISTRO_DEPS="libgnutls libgtk-2 libgtk-3 pulseaudio alsa-lib alsa-plugins giflib libpng openal-soft libxcomposite libxinerama ncurses vulkan ocl-icd libva gst-plugins-base sdl2 v4l-utils sqlite3"
+
+            "$ESCALATION_TOOL" "$PACKAGER" install -y $DEPENDENCIES $DISTRO_DEPS
             ;;
         *)
             printf "%b\n" "${RED}Unsupported package manager ${PACKAGER}${RC}"
@@ -68,7 +74,7 @@ installAdditionalDepend() {
             ;;
         apt-get | nala)
             version=$(git -c 'versionsort.suffix=-' ls-remote --tags --sort='v:refname' https://github.com/lutris/lutris |
-                grep -v 'beta' |
+                grep -v 'latest' |
                 tail -n1 |
                 cut -d '/' --fields=3)
 
@@ -83,12 +89,8 @@ installAdditionalDepend() {
             printf "%b\n" "${GREEN}Lutris Installation complete.${RC}"
             printf "%b\n" "${YELLOW}Installing steam...${RC}"
 
-            if lsb_release -i | grep -qi Debian; then
-                "$ESCALATION_TOOL" apt-add-repository non-free -y
-                "$ESCALATION_TOOL" "$PACKAGER" install steam-installer -y
-            else
-                "$ESCALATION_TOOL" "$PACKAGER" install -y steam
-            fi
+    
+            "$ESCALATION_TOOL" "$PACKAGER" install -y steam
             ;;
         dnf)
             DISTRO_DEPS='steam lutris'
@@ -97,6 +99,10 @@ installAdditionalDepend() {
         zypper)
             DISTRO_DEPS='lutris'
             "$ESCALATION_TOOL" "$PACKAGER" -n install $DISTRO_DEPS
+            ;;
+        eopkg)
+            DISTRO_DEPS='steam lutris'
+            "$ESCALATION_TOOL" "$PACKAGER" install -y $DISTRO_DEPS
             ;;
         *)
             printf "%b\n" "${RED}Unsupported package manager ${PACKAGER}${RC}"

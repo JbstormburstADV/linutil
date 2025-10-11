@@ -1,7 +1,22 @@
 name = "System Setup"
 
 [[data]]
-name = "Arch Linux"
+name = "Alpine"
+
+[[data.preconditions]]
+matches = true
+data = "command_exists"
+values = ["apk"]
+
+[[data.entries]]
+name = "Alpine Update"
+description = "Upgrades Alpine Linux to either latest stable or edge repositories"
+script = "alpine/alpine-upgrade.sh"
+task_list = "P MP"
+multi_select = false
+
+[[data]]
+name = "Arch"
 
 [[data.preconditions]]
 matches = true
@@ -19,6 +34,13 @@ multi_select = false
 name = "Hyprland JaKooLit"
 description = "Install JaKooLit's Hyprland configuration"
 script = "arch/hyprland-kool.sh"
+task_list = "I MP"
+multi_select = false
+
+[[data.entries]]
+name = "Omarchy Rice by DHH"
+description = "Simplified Hyprland configuration by DHH the ruby on rails dude."
+script = "arch/omarchy.sh"
 task_list = "I MP"
 multi_select = false
 
@@ -55,6 +77,12 @@ task_list = "FM I SS RP"
 name = "Yay AUR Helper"
 description = "Yet Another Yogurt - An AUR Helper Written in Go. To know more about AUR helpers visit: https://wiki.archlinux.org/title/AUR_helpers"
 script = "arch/yay-setup.sh"
+task_list = "I"
+
+[[data.entries]]
+name = "Install Chaotic-AUR Repository"
+description = "Chaotic-AUR provides prebuilt binaries for popular AUR packages, saving compilation time. To know more visit: https://aur.chaotic.cx/"
+script = "arch/chaotic-aur-setup.sh"
 task_list = "I"
 
 [[data]]
